@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Politique de confidentialité</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto py-8">
+        <h1 class="text-2xl font-bold">Politique de confidentialité</h1>
+        <p>Nous collectons vos données (nom, numéro WhatsApp, email, photos) pour gérer les demandes de pièces auto. Vos données sont protégées conformément au RGPD.</p>
+    </div>
+</body>
+</html>
