@@ -1,47 +1,49 @@
 const Twilio = require('twilio');
 
-exports.handler = fonction asynchrone (événement, contexte) {
+ 
 
-const { téléphone } = JSON.parse(event.body);
+exports.handler = async function(event, context) {
 
-const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const { phone } = JSON.parse(event.body);
 
-const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Code OTP à 6 chiffres
+    const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-essayer {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Code OTP à 6 chiffres
 
-attendre client.messages.create({
+    try {
 
-de : 'whatsapp:+14155238886', // Numéro Twilio WhatsApp
+        await client.messages.create({
 
-à : `whatsapp:${phone}`,
+            from: 'whatsapp:+14155238886', // Numéro Twilio WhatsApp
 
-body : `Votre code OTP est : ${otp}`
+            to: `whatsapp:${phone}`,
 
-});
+            body: `Votre code OTP est : ${otp}`
 
-// Stocker l'OTP temporairement (ex. : Firestore ou cache)
+        });
 
-// Pour simplifier, retourner l'OTP (à sécurité en production)
+        // Stocker l’OTP temporairement (ex. : Firestore ou cache)
 
-retour {
+        // Pour simplifier, retourner l’OTP (à sécuriser en production)
 
-Code d'état : 200,
+        return {
 
-corps : JSON.stringify({success: true, otp})
+            statusCode: 200,
 
-};
+            body: JSON.stringify({ success: true, otp })
 
-} catch (erreur) {
+        };
 
-retour {
+    } catch (error) {
 
-Code d'état : 500,
+        return {
 
-corps : JSON.stringify({succès : false, erreur : error.message})
+            statusCode: 500,
 
-};
+            body: JSON.stringify({ success: false, error: error.message })
 
-}
+        };
+
+    }
 
 };
