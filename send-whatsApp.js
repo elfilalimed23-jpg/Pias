@@ -1,41 +1,43 @@
 const Twilio = require('twilio');
 
-exports.handler = fonction asynchrone (événement, contexte) {
+ 
 
-const { à, message } = JSON.parse(event.body);
+exports.handler = async function(event, context) {
 
-const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const { to, message } = JSON.parse(event.body);
 
-essayer {
+    const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-attendre client.messages.create({
+    try {
 
-de : 'whatsapp:+14155238886', // Numéro Twilio WhatsApp
+        await client.messages.create({
 
-à : `whatsapp:${to}`,
+            from: 'whatsapp:+14155238886', // Numéro Twilio WhatsApp
 
-corps : message
+            to: `whatsapp:${to}`,
 
-});
+            body: message
 
-retour {
+        });
 
-Code d'état : 200,
+        return {
 
-corps : JSON.stringify({success: true})
+            statusCode: 200,
 
-};
+            body: JSON.stringify({ success: true })
 
-} catch (erreur) {
+        };
 
-retour {
+    } catch (error) {
 
-Code d'état : 500,
+        return {
 
-corps : JSON.stringify({succès : false, erreur : error.message})
+            statusCode: 500,
 
-};
+            body: JSON.stringify({ success: false, error: error.message })
 
-}
+        };
+
+    }
 
 };
