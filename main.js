@@ -1,5 +1,5 @@
 // main.js
-
+console.log("main.js chargé !");
      document.getElementById('sendOTPButton').addEventListener('click', async () => {
 
          const phone = document.getElementById('phoneInput').value;
