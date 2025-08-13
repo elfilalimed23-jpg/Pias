@@ -1,22 +1,36 @@
 // firebase-config.js
 
+// Import the functions you need from the SDKs you need
+
+import { initializeApp } from "firebase/app";
+
+// TODO: Add SDKs for Firebase products that you want to use
+
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+ 
+
+// Your web app's Firebase configuration
+
 const firebaseConfig = {
 
-apiKey: process.env.FIREBASE_API_KEY,
+  apiKey: "AIzaSyDqOBYReVwpp-OmV5qJ7Pnv3YBoRLCsXOk",
 
-authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  authDomain: "pias-4f200.firebaseapp.com",
 
-projectId: process.env.FIREBASE_PROJECT_ID,
+  projectId: "pias-4f200",
 
-storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  storageBucket: "pias-4f200.firebasestorage.app",
 
-messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  messagingSenderId: "426883647930",
 
-appId: process.env.FIREBASE_APP_ID
+  appId: "1:426883647930:web:19c5484ba756356d073583"
 
 };
 
-firebase.initializeApp(firebaseConfig);
+// Initialize Firebase
+
+const app = initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 
