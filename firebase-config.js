@@ -1,39 +1,25 @@
 // firebase-config.js
 
-// This file is loaded directly in the browser via a <script> tag. In this
-// context we can't use ES module imports, so we rely on the globally exposed
-// `firebase` object provided by the Firebase CDN scripts included in
-// `index.html`.
-
- 
+// Import the modular Firebase SDK components directly from the CDN.
+// This file is loaded as an ES module from `index.html`.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
-
 const firebaseConfig = {
-  // Values are injected at build time from environment variables. This keeps
-  // sensitive credentials out of source control while still making them
-  // available to client-side code after the Netlify build process replaces the
-  // `process.env.*` references.
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
+  apiKey: "AIzaSyDqOBYReVwpp-OmV5qJ7Pnv3YBoRLCsXOk",
+  authDomain: "pias-4f200.firebaseapp.com",
+  projectId: "pias-4f200",
+  storageBucket: "pias-4f200.firebasestorage.app",
+  messagingSenderId: "426883647930",
+  appId: "1:426883647930:web:19c5484ba756356d073583"
 };
 
-// Initialize Firebase using the compat API. This mirrors the initialization
-// in Firebase's quickstart examples and avoids the "Cannot use import statement
-// outside a module" error that occurred when this file attempted to use ES
-// module syntax in a non-module script.
+// Initialize Firebase using the modular API
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
-
-const db = firebase.firestore();
-
-// Expose the initialized services globally so other scripts can use them.
-// (e.g., main.js expects `auth` and `db` to be defined)
-window.auth = auth;
-window.db = db;
+// Export the initialized services so other modules can import them
+export { auth, db, serverTimestamp };
