@@ -1,26 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
 
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
                 // Fallback
                 if (headerRowIndex === -1 || headerRowIndex > 25) {
                   headerRowIndex = 0;
@@ -46,11 +24,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="firebase-config.js"></script>
     <script src="main.js"></script>
 
     <style>
@@ -76,137 +50,7 @@
 
     <!-- Main Content -->
     <main class="container mx-auto py-8">
-        <!-- Connexion -->
-        <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 modal items-center justify-center">
-            <div class="bg-white p-6 rounded-lg w-full max-w-md">
-                <h3 class="text-xl font-semibold mb-4">Connexion via WhatsApp</h3>
-                <form id="loginForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700">NumÃ©ro WhatsApp (+33...)</label>
-                        <input type="tel" id="loginPhone" required class="w-full p-2 border rounded">
-                    </div>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Envoyer le code OTP</button>
-                    <button type="button" id="closeLogin" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Fermer</button>
-                </form>
-                <div id="otpSection" class="hidden mt-4">
-                    <label class="block text-gray-700">Code OTP</label>
-                    <input type="text" id="otpCode" class="w-full p-2 border rounded">
-                    <button id="verifyOtp" class="bg-blue-600 text-white px-4 py-2 rounded mt-2">VÃ©rifier</button>
-                </div>
-                <p id="loginError" class="error-message mt-4 hidden"></p>
-                <p class="mt-4">Pas de compte ? <a href="#" id="signupLink">Inscrivez-vous</a></p>
-            </div>
-        </div>
-
-        <!-- Inscription -->
-        <div id="signupModal" class="fixed inset-0 bg-black bg-opacity-50 modal items-center justify-center">
-            <div class="bg-white p-6 rounded-lg w-full max-w-md">
-                <h3 class="text-xl font-semibold mb-4">Inscription via WhatsApp</h3>
-                <form id="signupForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700">NumÃ©ro WhatsApp (+33...)</label>
-                        <input type="tel" id="signupPhone" required class="w-full p-2 border rounded">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700">Type (Client/Vendeur)</label>
-                        <select id="userType" required class="w-full p-2 border rounded">
-                            <option value="client">Client</option>
-                            <option value="seller">Vendeur</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Envoyer le code OTP</button>
-                    <button type="button" id="closeSignup" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Fermer</button>
-                </form>
-                <div id="signupOtpSection" class="hidden mt-4">
-                    <label class="block text-gray-700">Code OTP</label>
-                    <input type="text" id="signupOtpCode" class="w-full p-2 border rounded">
-                    <button id="verifySignupOtp" class="bg-blue-600 text-white px-4 py-2 rounded mt-2">VÃ©rifier</button>
-                </div>
-                <p id="signupError" class="error-message mt-4 hidden"></p>
-            </div>
-        </div>
-
-        <!-- Formulaire vendeur -->
-        <section id="sellerFormSection" class="mb-8 hidden">
-            <h2 class="text-2xl font-semibold mb-4">Inscription Vendeur</h2>
-            <form id="sellerForm" class="bg-white p-6 rounded-lg shadow-lg">
-                <div class="mb-4">
-                    <label class="block text-gray-700">Nom</label>
-                    <input type="text" id="sellerName" required class="w-full p-2 border rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">NumÃ©ro WhatsApp (+33...)</label>
-                    <input type="tel" id="sellerPhone" required class="w-full p-2 border rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">Localisation</label>
-                    <div id="map"></div>
-                    <input type="hidden" id="sellerLat">
-                    <input type="hidden" id="sellerLng">
-                </div>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Enregistrer</button>
-            </form>
-            <p id="sellerError" class="error-message mt-4 hidden"></p>
-        </section>
-
-        <!-- Formulaire client -->
-        <section id="clientFormSection" class="mb-8">
-            <h2 class="text-2xl font-semibold mb-4">Demander une piÃ¨ce</h2>
-            <form id="clientForm" class="bg-white p-6 rounded-lg shadow-lg">
-                <div class="mb-4">
-                    <label class="block text-gray-700">Nom</label>
-                    <input type="text" id="clientName" required class="w-full p-2 border rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">NumÃ©ro WhatsApp (+33...)</label>
-                    <input type="tel" id="clientWhatsApp" required class="w-full p-2 border rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">Description de la piÃ¨ce</label>
-                    <textarea id="clientDescription" required class="w-full p-2 border rounded"></textarea>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700">Photo de la piÃ¨ce</label>
-                    <button type="button" id="uploadPhoto" class="bg-blue-600 text-white px-4 py-2 rounded">TÃ©lÃ©verser</button>
-                    <input type="hidden" id="photoUrl">
-                    <p id="photoStatus" class="text-gray-600 mt-2"></p>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700"><input type="checkbox" id="consent" required> J'accepte la politique de confidentialitÃ©</label>
-                </div>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Recevoir des offres</button>
-            </form>
-            <p id="clientError" class="error-message mt-4 hidden"></p>
-        </section>
-
-        <!-- Tableau de bord -->
-        <section id="dashboardSection" class="mb-8 hidden">
-            <h2 class="text-2xl font-semibold mb-4">Tableau de bord</h2>
-            <div id="requestsList" class="bg-white p-6 rounded-lg shadow-lg"></div>
-        </section>
-
-        <!-- Modal pour soumettre une offre -->
-        <div id="offerModal" class="fixed inset-0 bg-black bg-opacity-50 modal items-center justify-center">
-            <div class="bg-white p-6 rounded-lg w-full max-w-md">
-                <h3 class="text-xl font-semibold mb-4">Soumettre une offre</h3>
-                <form id="offerForm">
-                    <div class="mb-4">
-                        <label class="block text-gray-700">Prix proposÃ© (â¬)</label>
-                        <input type="number" id="offerPrice" step="0.01" required class="w-full p-2 border rounded">
-                    </div>
-                    <input type="hidden" id="offerRequestId">
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Envoyer lâoffre</button>
-                    <button type="button" id="closeOffer" class="bg-gray-500 text-white px-4 py-2 rounded ml-2">Fermer</button>
-                </form>
-                <p id="offerError" class="error-message mt-4 hidden"></p>
-            </div>
-        </div>
-
-        <!-- Modal pour clÃ´turer une demande -->
-        <div id="closeRequestModal" class="fixed inset-0 bg-black bg-opacity-50 modal items-center justify-center">
-            <div class="bg-white p-6 rounded-lg w-full max-w-md">
-                <h3 class="text-xl font-semibold mb-4">ClÃ´turer la demande</h3>
-                <form id="closeRequestForm">
+@@ -210,79 +206,83 @@
                     <div class="mb-4">
                         <label class="block text-gray-700">Note pour le vendeur (1-5)</label>
                         <input type="number" id="sellerRating" min="1" max="5" required class="w-full p-2 border rounded">
@@ -232,7 +76,11 @@
         </div>
     </footer>
      
-        <script>
+        <script type="module">
+        import { onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { auth, db, serverTimestamp } from "./firebase-config.js";
+
         // Cloudinary Config
         const CLOUDINARY_UPLOAD_PRESET = 'pias_upload';
         const CLOUDINARY_CLOUD_NAME = 'dh9wgl8cm';
@@ -247,7 +95,7 @@
         }
 
         // Gestion de lâauthentification
-        auth.onAuthStateChanged(user => {
+        onAuthStateChanged(auth, user => {
             const loginBtn = document.getElementById('loginBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userInfo = document.getElementById('userInfo');
@@ -259,8 +107,8 @@
                 logoutBtn.classList.remove('hidden');
                 userInfo.textContent = `ConnectÃ© : ${user.phoneNumber}`;
                 dashboardSection.classList.remove('hidden');
-                db.collection('users').doc(user.uid).get().then(doc => {
-                    if (doc.exists && doc.data().type === 'seller' && !doc.data().profileComplete) {
+                getDoc(doc(db, 'users', user.uid)).then(docSnap => {
+                    if (docSnap.exists() && docSnap.data().type === 'seller' && !docSnap.data().profileComplete) {
                         sellerFormSection.classList.remove('hidden');
                         clientFormSection.classList.add('hidden');
                     } else {
@@ -286,8 +134,7 @@
             const phone = document.getElementById('loginPhone').value;
             try {
                 // Envoyer OTP via Twilio (Netlify Function)
-                const response = await fetch('/.netlify/functions/send-otp', {
-                    method: 'POST',
+@@ -291,329 +291,329 @@
                     body: JSON.stringify({ phone })
                 });
                 const data = await response.json();
@@ -313,7 +160,7 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    await auth.signInWithCustomToken(data.token);
+                    await signInWithCustomToken(auth, data.token);
                     document.getElementById('loginModal').classList.remove('modal-active');
                 } else {
                     showError('loginError', 'Code OTP incorrect.');
@@ -359,8 +206,8 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    await auth.signInWithCustomToken(data.token);
-                    await db.collection('users').doc(auth.currentUser.uid).set({
+                    await signInWithCustomToken(auth, data.token);
+                    await setDoc(doc(db, 'users', auth.currentUser.uid), {
                         phoneNumber: phone,
                         type,
                         profileComplete: type === 'client'
@@ -376,7 +223,7 @@
 
         // DÃ©connexion
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            auth.signOut();
+            signOut(auth);
         });
 
         // Modales connexion/inscription
@@ -416,7 +263,7 @@
             const user = auth.currentUser;
             if (!user) return showError('sellerError', 'Veuillez vous connecter.');
             try {
-                await db.collection('users').doc(user.uid).update({
+                await updateDoc(doc(db, 'users', user.uid), {
                     name: document.getElementById('sellerName').value,
                     phone: document.getElementById('sellerPhone').value,
                     location: {
@@ -467,12 +314,12 @@
                 description: document.getElementById('clientDescription').value,
                 photoUrl: document.getElementById('photoUrl').value,
                 status: 'open',
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: serverTimestamp()
             };
             try {
-                const docRef = await db.collection('requests').add(request);
+                const docRef = await addDoc(collection(db, 'requests'), request);
                 // Notifier les vendeurs via WhatsApp
-                const sellers = await db.collection('users').where('type', '==', 'seller').get();
+                const sellers = await getDocs(query(collection(db, 'users'), where('type', '==', 'seller')));
                 for (const doc of sellers.docs) {
                     await fetch('/.netlify/functions/send-whatsapp', {
                         method: 'POST',
@@ -500,12 +347,12 @@
                 sellerId: user.uid,
                 requestId: document.getElementById('offerRequestId').value,
                 price: parseFloat(document.getElementById('offerPrice').value),
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: serverTimestamp()
             };
             try {
-                await db.collection('offers').add(offer);
+                await addDoc(collection(db, 'offers'), offer);
                 // Notifier le client via WhatsApp
-                const request = await db.collection('requests').doc(offer.requestId).get();
+                const request = await getDoc(doc(db, 'requests', offer.requestId));
                 await fetch('/.netlify/functions/send-whatsapp', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -533,7 +380,7 @@
             const rating = parseInt(document.getElementById('sellerRating').value);
             const comment = document.getElementById('sellerComment').value;
             try {
-                await db.collection('requests').doc(requestId).update({
+                await updateDoc(doc(db, 'requests', requestId), {
                     status: 'closed',
                     rating,
                     comment
@@ -552,18 +399,18 @@
         async function loadRequests(user) {
             const requestsList = document.getElementById('requestsList');
             requestsList.innerHTML = '';
-            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
             const userType = userDoc.data().type;
-            const query = userType === 'client'
-                ? db.collection('requests').where('clientId', '==', user.uid)
-                : db.collection('requests').where('status', '==', 'open');
-            const requests = await query.get();
-            requests.forEach(async doc => {
-                const request = doc.data();
+            const q = userType === 'client'
+                ? query(collection(db, 'requests'), where('clientId', '==', user.uid))
+                : query(collection(db, 'requests'), where('status', '==', 'open'));
+            const requests = await getDocs(q);
+            requests.forEach(async docSnap => {
+                const request = docSnap.data();
                 const requestDiv = document.createElement('div');
                 requestDiv.className = 'border p-4 mb-4 rounded';
                 requestDiv.innerHTML = `
-                    <p><strong>Demande #${doc.id}</strong></p>
+                    <p><strong>Demande #${docSnap.id}</strong></p>
                     <p><strong>Description:</strong> ${request.description}</p>
                     <p><strong>Photo:</strong> <a href="${request.photoUrl}" target="_blank">Voir</a></p>
                     <p><strong>Client:</strong> ${request.name} (${request.whatsApp})</p>
@@ -574,7 +421,7 @@
                     offerBtn.className = 'bg-green-600 text-white px-4 py-2 rounded mt-2';
                     offerBtn.textContent = 'Proposer une offre';
                     offerBtn.addEventListener('click', () => {
-                        document.getElementById('offerRequestId').value = doc.id;
+                        document.getElementById('offerRequestId').value = docSnap.id;
                         document.getElementById('offerModal').classList.add('modal-active');
                     });
                     requestDiv.appendChild(offerBtn);
@@ -584,18 +431,18 @@
                     closeBtn.className = 'bg-red-600 text-white px-4 py-2 rounded mt-2';
                     closeBtn.textContent = 'ClÃ´turer';
                     closeBtn.addEventListener('click', () => {
-                        document.getElementById('closeRequestId').value = doc.id;
+                        document.getElementById('closeRequestId').value = docSnap.id;
                         document.getElementById('closeRequestModal').classList.add('modal-active');
                     });
                     requestDiv.appendChild(closeBtn);
                 }
-                const offers = await db.collection('offers').where('requestId', '==', doc.id).get();
+                const offers = await getDocs(query(collection(db, 'offers'), where('requestId', '==', docSnap.id)));
                 if (!offers.empty) {
                     const offersDiv = document.createElement('div');
                     offersDiv.innerHTML = '<p><strong>Offres :</strong></p>';
                     for (const offer of offers.docs) {
                         const offerData = offer.data();
-                        const seller = await db.collection('users').doc(offerData.sellerId).get();
+                        const seller = await getDoc(doc(db, 'users', offerData.sellerId));
                         offersDiv.innerHTML += `
                             <p>- ${seller.data().name} : ${offerData.price.toFixed(2)} â¬</p>
                         `;
