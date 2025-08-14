@@ -67,3 +67,38 @@ The Firebase client configuration is injected at build time. Sensitive values su
 
    ```bash
    node scripts/inject-env.js
+
+
++30
+-1
+
+# Pias
+
+## Firebase configuration via environment variables
+
+The Firebase client configuration is injected at build time. Sensitive values
+such as the API key are provided through environment variables and are not
+committed to source control.
+
+### Development
+
+1. Define the required environment variables:
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_STORAGE_BUCKET`
+   - `FIREBASE_MESSAGING_SENDER_ID`
+   - `FIREBASE_APP_ID`
+2. Run the build script to inject the values into `firebase-config.js`:
+
+   ```bash
+   node scripts/inject-env.js
+   ```
+
+### Netlify deployment
+
+This repository includes a `netlify.toml` configuration that runs the injection
+script during the build. In the Netlify UI, configure the environment variables
+listed above. If the Firebase API key should remain public, you can disable
+secret scanning for it by setting `SECRETS_SCAN_OMIT_KEYS=FIREBASE_API_KEY` in
+Netlify's environment variable settings.
