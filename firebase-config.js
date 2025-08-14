@@ -10,19 +10,16 @@
 // Your web app's Firebase configuration
 
 const firebaseConfig = {
-
-  apiKey: "AIzaSyDqOBYReVwpp-OmV5qJ7Pnv3YBoRLCsXOk",
-
-  authDomain: "pias-4f200.firebaseapp.com",
-
-  projectId: "pias-4f200",
-
-  storageBucket: "pias-4f200.firebasestorage.app",
-
-  messagingSenderId: "426883647930",
-
-  appId: "1:426883647930:web:19c5484ba756356d073583"
-
+  // Values are injected at build time from environment variables. This keeps
+  // sensitive credentials out of source control while still making them
+  // available to client-side code after the Netlify build process replaces the
+  // `process.env.*` references.
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
 };
 
 // Initialize Firebase using the compat API. This mirrors the initialization
