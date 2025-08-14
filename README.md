@@ -45,3 +45,25 @@ Le fichier `firebase-config.js` doit être ajusté avec les valeurs de votre pro
 ## Cohérence linguistique
 Ce dépôt maintient une documentation et des commentaires en français afin de conserver une cohérence linguistique pour tous les contributeurs.
 readme
+
+# Pias
+
+Brève présentation du projet (description générale, fonctionnalités principales, etc.).
+
+## Firebase configuration via environment variables
+
+The Firebase client configuration is injected at build time. Sensitive values such as the API key are provided through environment variables and are not committed to source control.
+
+### Development
+
+1. Define the required environment variables:
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_STORAGE_BUCKET`
+   - `FIREBASE_MESSAGING_SENDER_ID`
+   - `FIREBASE_APP_ID`
+2. Run the build script to inject the values into `firebase-config.js`:
+
+   ```bash
+   node scripts/inject-env.js
