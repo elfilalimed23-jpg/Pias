@@ -1,14 +1,11 @@
 // firebase-config.js
 
-// Import the functions you need from the SDKs you need
+// This file is loaded directly in the browser via a <script> tag. In this
+// context we can't use ES module imports, so we rely on the globally exposed
+// `firebase` object provided by the Firebase CDN scripts included in
+// `index.html`.
 
-import { initializeApp } from "firebase/app";
-
-// TODO: Add SDKs for Firebase products that you want to use
-
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-
+ 
 
 // Your web app's Firebase configuration
 
@@ -28,10 +25,18 @@ const firebaseConfig = {
 
 };
 
-// Initialize Firebase
+// Initialize Firebase using the compat API. This mirrors the initialization
+// in Firebase's quickstart examples and avoids the "Cannot use import statement
+// outside a module" error that occurred when this file attempted to use ES
+// module syntax in a non-module script.
 
-const app = initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 
 const db = firebase.firestore();
+
+// Expose the initialized services globally so other scripts can use them.
+// (e.g., main.js expects `auth` and `db` to be defined)
+window.auth = auth;
+window.db = db;
