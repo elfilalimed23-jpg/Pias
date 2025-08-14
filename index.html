@@ -1,4 +1,26 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
 
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
                 // Fallback
                 if (headerRowIndex === -1 || headerRowIndex > 25) {
                   headerRowIndex = 0;
@@ -20,6 +42,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Connectez clients et vendeurs de pièces auto via WhatsApp">
     <title>PiÃ¨ces Auto - Gestion de Leads</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -50,7 +73,6 @@
 
     <!-- Main Content -->
     <main class="container mx-auto py-8">
-@@ -210,79 +206,83 @@
                     <div class="mb-4">
                         <label class="block text-gray-700">Note pour le vendeur (1-5)</label>
                         <input type="number" id="sellerRating" min="1" max="5" required class="w-full p-2 border rounded">
@@ -76,39 +98,7 @@
         </div>
     </footer>
      
-        <script type="module">
-        import { onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        import { auth, db, serverTimestamp } from "./firebase-config.js";
-
-        // Cloudinary Config
-        const CLOUDINARY_UPLOAD_PRESET = 'pias_upload';
-        const CLOUDINARY_CLOUD_NAME = 'dh9wgl8cm';
-
-        // Afficher/Cacher erreurs
-        function showError(elementId, message) {
-            document.getElementById(elementId).textContent = message;
-            document.getElementById(elementId).classList.remove('hidden');
-        }
-        function hideError(elementId) {
-            document.getElementById(elementId).classList.add('hidden');
-        }
-
-        // Gestion de lâauthentification
-        onAuthStateChanged(auth, user => {
-            const loginBtn = document.getElementById('loginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const userInfo = document.getElementById('userInfo');
-            const sellerFormSection = document.getElementById('sellerFormSection');
-            const clientFormSection = document.getElementById('clientFormSection');
-            const dashboardSection = document.getElementById('dashboardSection');
-            if (user) {
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-                userInfo.textContent = `ConnectÃ© : ${user.phoneNumber}`;
-                dashboardSection.classList.remove('hidden');
-                getDoc(doc(db, 'users', user.uid)).then(docSnap => {
-                    if (docSnap.exists() && docSnap.data().type === 'seller' && !docSnap.data().profileComplete) {
+@@ -112,51 +134,50 @@
                         sellerFormSection.classList.remove('hidden');
                         clientFormSection.classList.add('hidden');
                     } else {
@@ -134,7 +124,6 @@
             const phone = document.getElementById('loginPhone').value;
             try {
                 // Envoyer OTP via Twilio (Netlify Function)
-@@ -291,329 +291,329 @@
                     body: JSON.stringify({ phone })
                 });
                 const data = await response.json();
@@ -160,307 +149,3 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    await signInWithCustomToken(auth, data.token);
-                    document.getElementById('loginModal').classList.remove('modal-active');
-                } else {
-                    showError('loginError', 'Code OTP incorrect.');
-                }
-            } catch (error) {
-                showError('loginError', 'Erreur lors de la vÃ©rification.');
-            }
-        });
-
-        // Inscription via WhatsApp
-        document.getElementById('signupForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            hideError('signupError');
-            const phone = document.getElementById('signupPhone').value;
-            const type = document.getElementById('userType').value;
-            try {
-                const response = await fetch('/.netlify/functions/send-otp', {
-                    method: 'POST',
-                    body: JSON.stringify({ phone })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    document.getElementById('signupOtpSection').classList.remove('hidden');
-                    document.getElementById('signupForm').querySelector('button[type="submit"]').classList.add('hidden');
-                    document.getElementById('signupOtpCode').dataset.type = type;
-                } else {
-                    showError('signupError', 'Erreur lors de lâenvoi du code OTP.');
-                }
-            } catch (error) {
-                showError('signupError', 'Erreur rÃ©seau.');
-            }
-        });
-
-        document.getElementById('verifySignupOtp').addEventListener('click', async () => {
-            hideError('signupError');
-            const phone = document.getElementById('signupPhone').value;
-            const otp = document.getElementById('signupOtpCode').value;
-            const type = document.getElementById('signupOtpCode').dataset.type;
-            try {
-                const response = await fetch('/.netlify/functions/verify-otp', {
-                    method: 'POST',
-                    body: JSON.stringify({ phone, otp, type })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    await signInWithCustomToken(auth, data.token);
-                    await setDoc(doc(db, 'users', auth.currentUser.uid), {
-                        phoneNumber: phone,
-                        type,
-                        profileComplete: type === 'client'
-                    });
-                    document.getElementById('signupModal').classList.remove('modal-active');
-                } else {
-                    showError('signupError', 'Code OTP incorrect.');
-                }
-            } catch (error) {
-                showError('signupError', 'Erreur lors de la vÃ©rification.');
-            }
-        });
-
-        // DÃ©connexion
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        // Modales connexion/inscription
-        document.getElementById('loginBtn').addEventListener('click', () => {
-            document.getElementById('loginModal').classList.add('modal-active');
-        });
-        document.getElementById('closeLogin').addEventListener('click', () => {
-            document.getElementById('loginModal').classList.remove('modal-active');
-        });
-        document.getElementById('signupLink').addEventListener('click', () => {
-            document.getElementById('loginModal').classList.remove('modal-active');
-            document.getElementById('signupModal').classList.add('modal-active');
-        });
-        document.getElementById('closeSignup').addEventListener('click', () => {
-            document.getElementById('signupModal').classList.remove('modal-active');
-        });
-
-        // Carte pour localisation vendeur
-        let map, marker;
-        function initMap() {
-            map = L.map('map').setView([48.8566, 2.3522], 13); // Paris par dÃ©faut
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: 'Â© OpenStreetMap'
-            }).addTo(map);
-            marker = L.marker([48.8566, 2.3522], { draggable: true }).addTo(map);
-            marker.on('dragend', () => {
-                const position = marker.getLatLng();
-                document.getElementById('sellerLat').value = position.lat;
-                document.getElementById('sellerLng').value = position.lng;
-            });
-        }
-
-        // Formulaire vendeur
-        document.getElementById('sellerForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            hideError('sellerError');
-            const user = auth.currentUser;
-            if (!user) return showError('sellerError', 'Veuillez vous connecter.');
-            try {
-                await updateDoc(doc(db, 'users', user.uid), {
-                    name: document.getElementById('sellerName').value,
-                    phone: document.getElementById('sellerPhone').value,
-                    location: {
-                        lat: parseFloat(document.getElementById('sellerLat').value),
-                        lng: parseFloat(document.getElementById('sellerLng').value)
-                    },
-                    profileComplete: true
-                });
-                document.getElementById('sellerFormSection').classList.add('hidden');
-                document.getElementById('clientFormSection').classList.remove('hidden');
-            } catch (error) {
-                showError('sellerError', 'Erreur lors de lâenregistrement.');
-            }
-        });
-
-        // Cloudinary pour photos
-        const uploadWidget = cloudinary.createUploadWidget(
-            {
-                cloudName: CLOUDINARY_CLOUD_NAME,
-                uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-                sources: ['local', 'camera'],
-                multiple: false,
-                resourceType: 'image'
-            },
-            (error, result) => {
-                if (!error && result && result.event === 'success') {
-                    document.getElementById('photoUrl').value = result.info.secure_url;
-                    document.getElementById('photoStatus').textContent = 'Photo tÃ©lÃ©versÃ©e !';
-                } else if (error) {
-                    showError('clientError', 'Erreur lors du tÃ©lÃ©versement.');
-                }
-            }
-        );
-        document.getElementById('uploadPhoto').addEventListener('click', () => {
-            uploadWidget.open();
-        });
-
-        // Formulaire client
-        document.getElementById('clientForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            hideError('clientError');
-            const user = auth.currentUser;
-            if (!user) return showError('clientError', 'Veuillez vous connecter.');
-            const request = {
-                clientId: user.uid,
-                name: document.getElementById('clientName').value,
-                whatsApp: document.getElementById('clientWhatsApp').value,
-                description: document.getElementById('clientDescription').value,
-                photoUrl: document.getElementById('photoUrl').value,
-                status: 'open',
-                timestamp: serverTimestamp()
-            };
-            try {
-                const docRef = await addDoc(collection(db, 'requests'), request);
-                // Notifier les vendeurs via WhatsApp
-                const sellers = await getDocs(query(collection(db, 'users'), where('type', '==', 'seller')));
-                for (const doc of sellers.docs) {
-                    await fetch('/.netlify/functions/send-whatsapp', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            to: doc.data().phone,
-                            message: `Nouvelle demande #${docRef.id} : ${request.description}`
-                        })
-                    });
-                }
-                alert('Demande envoyÃ©e !');
-                document.getElementById('clientForm').reset();
-                document.getElementById('photoStatus').textContent = '';
-            } catch (error) {
-                showError('clientError', 'Erreur lors de lâenvoi.');
-            }
-        });
-
-        // Formulaire offre
-        document.getElementById('offerForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            hideError('offerError');
-            const user = auth.currentUser;
-            if (!user) return showError('offerError', 'Veuillez vous connecter.');
-            const offer = {
-                sellerId: user.uid,
-                requestId: document.getElementById('offerRequestId').value,
-                price: parseFloat(document.getElementById('offerPrice').value),
-                timestamp: serverTimestamp()
-            };
-            try {
-                await addDoc(collection(db, 'offers'), offer);
-                // Notifier le client via WhatsApp
-                const request = await getDoc(doc(db, 'requests', offer.requestId));
-                await fetch('/.netlify/functions/send-whatsapp', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        to: request.data().whatsApp,
-                        message: `Nouvelle offre pour demande #${offer.requestId} : ${offer.price.toFixed(2)} â¬`
-                    })
-                });
-                document.getElementById('offerModal').classList.remove('modal-active');
-                loadRequests(user);
-            } catch (error) {
-                showError('offerError', 'Erreur lors de lâenvoi de lâoffre.');
-            }
-        });
-        document.getElementById('closeOffer').addEventListener('click', () => {
-            document.getElementById('offerModal').classList.remove('modal-active');
-        });
-
-        // ClÃ´turer une demande
-        document.getElementById('closeRequestForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            hideError('closeRequestError');
-            const user = auth.currentUser;
-            if (!user) return showError('closeRequestError', 'Veuillez vous connecter.');
-            const requestId = document.getElementById('closeRequestId').value;
-            const rating = parseInt(document.getElementById('sellerRating').value);
-            const comment = document.getElementById('sellerComment').value;
-            try {
-                await updateDoc(doc(db, 'requests', requestId), {
-                    status: 'closed',
-                    rating,
-                    comment
-                });
-                document.getElementById('closeRequestModal').classList.remove('modal-active');
-                loadRequests(user);
-            } catch (error) {
-                showError('closeRequestError', 'Erreur lors de la clÃ´ture.');
-            }
-        });
-        document.getElementById('closeCloseRequest').addEventListener('click', () => {
-            document.getElementById('closeRequestModal').classList.remove('modal-active');
-        });
-
-        // Charger les demandes
-        async function loadRequests(user) {
-            const requestsList = document.getElementById('requestsList');
-            requestsList.innerHTML = '';
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            const userType = userDoc.data().type;
-            const q = userType === 'client'
-                ? query(collection(db, 'requests'), where('clientId', '==', user.uid))
-                : query(collection(db, 'requests'), where('status', '==', 'open'));
-            const requests = await getDocs(q);
-            requests.forEach(async docSnap => {
-                const request = docSnap.data();
-                const requestDiv = document.createElement('div');
-                requestDiv.className = 'border p-4 mb-4 rounded';
-                requestDiv.innerHTML = `
-                    <p><strong>Demande #${docSnap.id}</strong></p>
-                    <p><strong>Description:</strong> ${request.description}</p>
-                    <p><strong>Photo:</strong> <a href="${request.photoUrl}" target="_blank">Voir</a></p>
-                    <p><strong>Client:</strong> ${request.name} (${request.whatsApp})</p>
-                    <p><strong>Statut:</strong> ${request.status}</p>
-                `;
-                if (userType === 'seller' && request.status === 'open') {
-                    const offerBtn = document.createElement('button');
-                    offerBtn.className = 'bg-green-600 text-white px-4 py-2 rounded mt-2';
-                    offerBtn.textContent = 'Proposer une offre';
-                    offerBtn.addEventListener('click', () => {
-                        document.getElementById('offerRequestId').value = docSnap.id;
-                        document.getElementById('offerModal').classList.add('modal-active');
-                    });
-                    requestDiv.appendChild(offerBtn);
-                }
-                if (userType === 'client' && request.status === 'open') {
-                    const closeBtn = document.createElement('button');
-                    closeBtn.className = 'bg-red-600 text-white px-4 py-2 rounded mt-2';
-                    closeBtn.textContent = 'ClÃ´turer';
-                    closeBtn.addEventListener('click', () => {
-                        document.getElementById('closeRequestId').value = docSnap.id;
-                        document.getElementById('closeRequestModal').classList.add('modal-active');
-                    });
-                    requestDiv.appendChild(closeBtn);
-                }
-                const offers = await getDocs(query(collection(db, 'offers'), where('requestId', '==', docSnap.id)));
-                if (!offers.empty) {
-                    const offersDiv = document.createElement('div');
-                    offersDiv.innerHTML = '<p><strong>Offres :</strong></p>';
-                    for (const offer of offers.docs) {
-                        const offerData = offer.data();
-                        const seller = await getDoc(doc(db, 'users', offerData.sellerId));
-                        offersDiv.innerHTML += `
-                            <p>- ${seller.data().name} : ${offerData.price.toFixed(2)} â¬</p>
-                        `;
-                    }
-                    requestDiv.appendChild(offersDiv);
-                }
-                if (request.status === 'closed' && request.rating) {
-                    requestDiv.innerHTML += `
-                        <p><strong>Note :</strong> ${request.rating}/5</p>
-                        <p><strong>Commentaire :</strong> ${request.comment || 'Aucun'}</p>
-                    `;
-                }
-                requestsList.appendChild(requestDiv);
-            });
-        }
-
-        // Initialisation
-        initMap();
-    </script>
-</body>
-</html>
