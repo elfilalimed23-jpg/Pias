@@ -1,0 +1,14 @@
+[build]
+  command = "node scripts/inject-env.js"
+  publish = "."
+
+[template.environment]
+  FIREBASE_API_KEY = "Firebase API key"
+  FIREBASE_AUTH_DOMAIN = "Firebase Auth domain"
+  FIREBASE_PROJECT_ID = "Firebase project ID"
+  FIREBASE_STORAGE_BUCKET = "Firebase storage bucket"
+  FIREBASE_MESSAGING_SENDER_ID = "Firebase messaging sender id"
+  FIREBASE_APP_ID = "Firebase app id"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "FIREBASE_API_KEY"
